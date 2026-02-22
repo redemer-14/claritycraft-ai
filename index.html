@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DraftWise — AI-Assisted Writing Tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['DM Sans', 'system-ui', 'sans-serif'],
+            mono: ['DM Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f4ff',
+              100: '#dbe4ff',
+              200: '#bac8ff',
+              300: '#91a7ff',
+              400: '#748ffc',
+              500: '#5c7cfa',
+              600: '#4c6ef5',
+              700: '#4263eb',
+              800: '#3b5bdb',
+              900: '#364fc7',
+            },
+            surface: {
+              50: '#fafbfc',
+              100: '#f1f3f5',
+              200: '#e9ecef',
+              300: '#dee2e6',
+              400: '#ced4da',
+              500: '#adb5bd',
+              600: '#868e96',
+              700: '#495057',
+              800: '#343a40',
+              900: '#212529',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { font-family: 'DM Sans', system-ui, sans-serif; }
+    .editor-area:focus { outline: none; }
+    .editor-area:empty::before {
+      content: attr(data-placeholder);
+      color: #adb5bd;
+      pointer-events: none;
+    }
+    .suggestion-card { transition: all 0.2s ease; }
+    .suggestion-card:hover { transform: translateY(-1px); }
+    .tool-tab { transition: all 0.15s ease; }
+    .tool-tab.active { background: #f0f4ff; color: #4263eb; border-color: #4263eb; }
+    .ai-badge { animation: pulse-subtle 3s ease-in-out infinite; }
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .stat-ring { transition: stroke-dashoffset 0.8s ease; }
+    .fade-in { animation: fadeIn 0.3s ease forwards; opacity: 0; }
+    @keyframes fadeIn { to { opacity: 1; } }
+    .slide-up { animation: slideUp 0.3s ease forwards; opacity: 0; transform: translateY(8px); }
+    @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+    .disclosure-banner {
+      background: linear-gradient(135deg, #f0f4ff 0%, #dbe4ff 100%);
+      border-left: 3px solid #4263eb;
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #ced4da; }
+    .highlight-grammar { background: rgba(255, 107, 107, 0.15); border-bottom: 2px wavy #ff6b6b; padding: 0 2px; border-radius: 2px; }
+    .highlight-clarity { background: rgba(255, 193, 7, 0.15); border-bottom: 2px wavy #ffc107; padding: 0 2px; border-radius: 2px; }
+    .highlight-style { background: rgba(92, 124, 250, 0.15); border-bottom: 2px wavy #5c7cfa; padding: 0 2px; border-radius: 2px; }
+    .tone-bar { transition: width 0.6s ease; }
+    .meter-fill { transition: width 0.8s ease; }
+  </style>
+</head>
+<body class="bg-surface-50 text-surface-900 min-h-screen">
+
+  <!-- AI Disclosure Banner -->
+  <div id="disclosureBanner" class="disclosure-banner px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3 max-w-6xl mx-auto w-full">
+      <div class="flex items-center gap-2">
+        <div class="ai-badge flex items-center gap-1.5 bg-white/80 backdrop-blur px-2.5 py-1 rounded-full border border-brand-200">
+          <svg class="w-3.5 h-3.5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span class="text-xs font-semibold text-brand-700">AI-ASSISTED</span>
+        </div>
+        <p class="text-sm text-surface-700">
+          <span class="font-medium">Transparency Notice:</span> This tool uses AI algorithms to analyze text and generate suggestions. All outputs are AI-generated and should be reviewed by a human before use.
+        </p>
+      </div>
+      <button onclick="document.getElementById('disclosureBanner').classList.add('hidden')" class="text-surface-500 hover:text-surface-700 ml-auto flex-shrink-0 p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-white border-b border-surface-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
+          <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+        </div>
+        <h1 class="text-lg font-bold text-surface-900 tracking-tight">DraftWise</h1>
+        <span class="hidden sm:inline text-xs font-medium text-surface-400 border-l border-surface-200 pl-3 ml-1">AI Writing Assistant</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnNewDoc" class="text-sm text-surface-600 hover:text-surface-900 hover:bg-surface-100 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          New
+        </button>
+        <button id="btnExport" class="text-sm bg-brand-600 text-white hover:bg-brand-700 px-4 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 font-medium shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Export
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Panel: Editor -->
+      <div class="lg:col-span-8 space-y-4">
+
+        <!-- Document Title -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 pt-5 pb-3 border-b border-surface-100">
+            <input id="docTitle" type="text" value="Untitled Document" class="w-full text-xl font-bold text-surface-900 bg-transparent border-none outline-none placeholder:text-surface-400" placeholder="Document title...">
+            <div class="flex items-center gap-4 mt-2 text-xs text-surface-500">
+              <span id="wordCount">0 words</span>
+              <span class="w-1 h-1 rounded-full bg-surface-300"></span>
+              <span id="charCount">0 characters</span>
+              <span class="w-1 h-1 rounded-full bg-surface-300"></span>
+              <span id="readTime">0 min read</span>
+              <span class="w-1 h-1 rounded-full bg-surface-300"></span>
+              <span id="sentenceCount">0 sentences</span>
+            </div>
+          </div>
+
+          <!-- Toolbar -->
+          <div class="px-5 py-2 border-b border-surface-100 flex items-center gap-1 flex-wrap">
+            <button data-format="bold" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors" title="Bold">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg>
+            </button>
+            <button data-format="italic" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors" title="Italic">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M19 4h-9M14 20H5M15 4L9 20"/></svg>
+            </button>
+            <button data-format="underline" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors" title="Underline">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3M4 21h16"/></svg>
+            </button>
+            <div class="w-px h-5 bg-surface-200 mx-1"></div>
+            <button data-format="heading" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors text-sm font-bold" title="Heading">
+              H
+            </button>
+            <button data-format="list" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors" title="Bullet List">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </button>
+            <button data-format="quote" class="format-btn p-1.5 rounded-md hover:bg-surface-100 text-surface-600 transition-colors" title="Block Quote">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151C7.546 6.068 5.983 8.789 5.983 11H10v10H0z"/></svg>
+            </button>
+            <div class="w-px h-5 bg-surface-200 mx-1"></div>
+            <select id="toneSelect" class="text-xs text-surface-600 bg-surface-50 border border-surface-200 rounded-md px-2 py-1.5 outline-none focus:border-brand-400 cursor-pointer">
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+              <option value="academic">Academic</option>
+              <option value="creative">Creative</option>
+              <option value="persuasive">Persuasive</option>
+            </select>
+            <div class="ml-auto flex items-center gap-2">
+              <button id="btnAnalyze" class="text-xs bg-brand-50 text-brand-700 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center gap-1.5 border border-brand-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Analyze
+              </button>
+            </div>
+          </div>
+
+          <!-- Editor -->
+          <div id="editor" class="editor-area px-6 py-5 min-h-[420px] text-base leading-relaxed text-surface-800 focus:ring-0" contenteditable="true" data-placeholder="Start writing your content here... Paste or type your text, then click 'Analyze' to get AI-powered suggestions for improvement." spellcheck="true"></div>
+
+          <!-- AI Disclosure Footer in Editor -->
+          <div class="px-5 py-3 bg-surface-50 border-t border-surface-100 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 text-surface-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-xs text-surface-500">AI suggestions are generated algorithmically. Always review and verify before publishing.</p>
+          </div>
+        </div>
+
+        <!-- AI Writing Tools -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-surface-100">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <h2 class="text-sm font-semibold text-surface-900">AI Writing Tools</h2>
+                <div class="flex items-center gap-1 bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span class="text-xs font-medium">AI-Generated</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Tool Tabs -->
+          <div class="px-5 py-3 border-b border-surface-100 flex gap-2 overflow-x-auto">
+            <button data-tool="rewrite" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap active">Rewrite</button>
+            <button data-tool="expand" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap">Expand</button>
+            <button data-tool="shorten" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap">Shorten</button>
+            <button data-tool="grammar" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap">Fix Grammar</button>
+            <button data-tool="simplify" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap">Simplify</button>
+            <button data-tool="headlines" class="tool-tab text-xs font-medium px-3 py-1.5 rounded-lg border border-surface-200 text-surface-600 hover:bg-surface-50 whitespace-nowrap">Headlines</button>
+          </div>
+          <!-- Tool Output -->
+          <div id="toolOutput" class="px-5 py-4">
+            <div class="text-center py-8">
+              <div class="w-12 h-12 rounded-2xl bg-surface-100 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-surface-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                </svg>
+              </div>
+              <p class="text-sm text-surface-500 mb-1">Select text in the editor, then choose a tool</p>
+              <p class="text-xs text-surface-400">Or write some content and click Analyze for full feedback</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Analysis -->
+      <div class="lg:col-span-4 space-y-4">
+
+        <!-- Writing Score -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-surface-100 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-surface-900">Writing Score</h2>
+            <div class="flex items-center gap-1 bg-brand-50 text-brand-600 px-2 py-0.5 rounded-full border border-brand-200">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+              </svg>
+              <span class="text-xs font-medium">AI Analysis</span>
+            </div>
+          </div>
+          <div class="p-5">
+            <div id="scoreEmpty" class="text-center py-6">
+              <div class="relative w-24 h-24 mx-auto mb-3">
+                <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f3f5" stroke-width="8"/>
+                  <circle id="scoreRing" class="stat-ring" cx="50" cy="50" r="42" fill="none" stroke="#dee2e6" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span id="scoreValue" class="text-2xl font-bold text-surface-300">—</span>
+                </div>
+              </div>
+              <p class="text-sm text-surface-500">Write content to see your score</p>
+            </div>
+            <div id="scoreDetails" class="hidden space-y-3">
+              <div class="relative w-24 h-24 mx-auto mb-4">
+                <svg class="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f3f5" stroke-width="8"/>
+                  <circle id="scoreRingActive" class="stat-ring" cx="50" cy="50" r="42" fill="none" stroke="#4263eb" stroke-width="8" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span id="scoreValueActive" class="text-2xl font-bold text-brand-700">0</span>
+                </div>
+              </div>
+              <!-- Score Breakdown -->
+              <div class="space-y-2.5">
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-surface-600 font-medium">Readability</span>
+                    <span id="readabilityScore" class="text-surface-500">0</span>
+                  </div>
+                  <div class="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                    <div id="readabilityBar" class="meter-fill h-full bg-emerald-500 rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-surface-600 font-medium">Clarity</span>
+                    <span id="clarityScore" class="text-surface-500">0</span>
+                  </div>
+                  <div class="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                    <div id="clarityBar" class="meter-fill h-full bg-brand-500 rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-surface-600 font-medium">Engagement</span>
+                    <span id="engagementScore" class="text-surface-500">0</span>
+                  </div>
+                  <div class="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                    <div id="engagementBar" class="meter-fill h-full bg-amber-500 rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="text-surface-600 font-medium">Grammar</span>
+                    <span id="grammarScore" class="text-surface-500">0</span>
+                  </div>
+                  <div class="h-1.5 bg-surface-100 rounded-full overflow-hidden">
+                    <div id="grammarBar" class="meter-fill h-full bg-violet-500 rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tone Analysis -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-surface-100">
+            <h2 class="text-sm font-semibold text-surface-900">Tone Analysis</h2>
+          </div>
+          <div id="toneAnalysis" class="p-5">
+            <div class="text-center py-4">
+              <p class="text-sm text-surface-400">Analyze your text to see tone breakdown</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggestions -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-surface-100 flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-surface-900">Suggestions</h2>
+            <span id="suggestionCount" class="text-xs text-surface-400 font-medium">0 items</span>
+          </div>
+          <div id="suggestionsPanel" class="divide-y divide-surface-100 max-h-[400px] overflow-y-auto">
+            <div class="px-5 py-6 text-center">
+              <p class="text-sm text-surface-400">Click Analyze to get writing suggestions</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI Disclosure Card -->
+        <div class="bg-white rounded-2xl border border-surface-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-surface-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              <h2 class="text-sm font-semibold text-surface-900">AI Transparency</h2>
+            </div>
+          </div>
+          <div class="p-5 space-y-3">
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-surface-800">How it works</p>
+                <p class="text-xs text-surface-500 mt-0.5">Text analysis uses pattern matching and linguistic rules to evaluate readability, grammar, and style.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-surface-800">Limitations</p>
+                <p class="text-xs text-surface-500 mt-0.5">AI suggestions may not capture nuance, context, or creative intent. Use your judgment for final decisions.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs font-medium text-surface-800">Your data</p>
+                <p class="text-xs text-surface-500 mt-0.5">All text processing happens locally in your browser. No content is sent to external servers.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Export Modal -->
+  <div id="exportModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden fade-in">
+      <div class="px-6 py-5 border-b border-surface-100 flex items-center justify-between">
+        <h3 class="text-base font-semibold text-surface-900">Export Document</h3>
+        <button id="closeExportModal" class="text-surface-400 hover:text-surface-600 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6 space-y-3">
+        <div class="disclosure-banner rounded-xl px-4 py-3 mb-4">
+          <div class="flex items-center gap-2 mb-1">
+            <svg class="w-3.5 h-3.5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span class="text-xs font-semibold text-brand-700">AI Disclosure Included</span>
+          </div>
+          <p class="text-xs text-surface-600">Exported documents will include an AI-assisted disclosure notice at the bottom for transparency.</p>
+        </div>
+        <button data-export="txt" class="export-option w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200 hover:border-brand-300 hover:bg-brand-50 transition-all text-left">
+          <div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center flex-shrink-0">
+            <span class="text-sm font-bold text-surface-600">TXT</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-surface-800">Plain Text</p>
+            <p class="text-xs text-surface-500">Simple text format, universal compatibility</p>
+          </div>
+        </button>
+        <button data-export="md" class="export-option w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200 hover:border-brand-300 hover:bg-brand-50 transition-all text-left">
+          <div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center flex-shrink-0">
+            <span class="text-sm font-bold text-surface-600">MD</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-surface-800">Markdown</p>
+            <p class="text-xs text-surface-500">Formatted text for GitHub, blogs, docs</p>
+          </div>
+        </button>
+        <button data-export="html" class="export-option w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-surface-200 hover:border-brand-300 hover:bg-brand-50 transition-all text-left">
+          <div class="w-10 h-10 rounded-xl bg-surface-100 flex items-center justify-center flex-shrink-0">
+            <span class="text-sm font-bold text-surface-600">HTML</span>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-surface-800">HTML Document</p>
+            <p class="text-xs text-surface-500">Web-ready format with styling</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
